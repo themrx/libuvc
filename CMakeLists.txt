@@ -21,14 +21,25 @@ set(libuvc_URL "https://github.com/ktossell/libuvc")
 
 if(WIN32)
 
-  find_library(LIBUSB_LIBRARIES usb-1.0
+  find_library(LIBUSB_LIBRARIES libusb.lib
   PATHS /opt/local/lib)
 
-  find_path(LIBUSB_INCLUDE_DIR libusb-1.0/libusb.h
+  find_path(LIBUSB_INCLUDE_DIR libusb/libusb.h
   PATHS /opt/local/include)
+
+  find_path(LIBJPEG_LIBRARIES jpeg.lib turbojpeg.lib
+  PATHS /opt/local/lib)
+
+  find_path(JPEG_INCLUDE jpegturbo/jpeglib.h
+  PATHS /opt/local/include)
+  set(JPEG_FOUND ON)
+  list(APPEND JPEG_LINK_FLAGS ${LIBJPEG_LIBRARIES}jpeg.lib ${LIBJPEG_LIBRARIES}turbojpeg.lib)
+  set(JPEG_INCLUDE_DIR ${JPEG_INCLUDE})
+
+message(STATUS ${JPEG_LINK_FLAGS})
 else()
   find_package(PkgConfig)
-  pkg_check_modules(LIBUSB libusb-1.0)
+  pkg_check_modules(LIBUSB libusb)
   pkg_check_modules(JPEG QUIET libjpeg)
   if(JPEG_FOUND)
     set(JPEG_LINK_FLAGS ${JPEG_LIBRARIES})
@@ -46,7 +57,6 @@ else()
     endif()
   endif()
 endif()
-
 
 if(WIN32)
   find_library(PTHREAD_LIBRARIES pthreadVC2
@@ -107,22 +117,20 @@ endif()
 
 configure_file(include/libuvc/libuvc_config.h.in
   ${PROJECT_BINARY_DIR}/include/libuvc/libuvc_config.h @ONLY)
-
+  
 foreach(target_name ${UVC_TARGETS})
   set_target_properties(${target_name} PROPERTIES
-    PUBLIC_HEADER "include/libuvc/libuvc.h;${libuvc_BINARY_DIR}/include/libuvc/libuvc_config.h"  WINDOWS_EXPORT_ALL_SYMBOLS TRUE)
+    PUBLIC_HEADER "include/libuvc/libuvc.h;${libuvc_BINARY_DIR}/include/libuvc/libuvc_config.h"  DEBUG_POSTFIX d WINDOWS_EXPORT_ALL_SYMBOLS TRUE)
   set_target_properties(${target_name} PROPERTIES
                         VERSION ${libuvc_VERSION}
                         SOVERSION ${libuvc_VERSION_MAJOR})
 endforeach()
-
+message(STATUS ${JPEG_LINK_FLAGS})
 if(BUILD_UVC_SHARED)
   if(JPEG_FOUND)
     target_link_libraries (uvc ${JPEG_LINK_FLAGS})
   endif(JPEG_FOUND)
-
   target_link_libraries(uvc ${LIBUSB_LIBRARIES} ${PTHREAD_LIBRARIES} ${JPEG_LIBRARIES})
-
   #add_executable(test src/test.c)
   #target_link_libraries(test uvc ${LIBUSB_LIBRARIES} opencv_highgui
   #  opencv_core)
@@ -132,6 +140,7 @@ install(TARGETS ${UVC_TARGETS}
   EXPORT libuvcTargets
   LIBRARY DESTINATION "${CMAKE_INSTALL_PREFIX}/lib"
   ARCHIVE DESTINATION "${CMAKE_INSTALL_PREFIX}/lib"
+  RUNTIME DESTINATION "${CMAKE_INSTALL_PREFIX}/bin"
   PUBLIC_HEADER DESTINATION "${CMAKE_INSTALL_PREFIX}/include/libuvc"
 )
 
@@ -142,13 +151,13 @@ export(PACKAGE libuvc)
 set(CONF_INCLUDE_DIR "${CMAKE_INSTALL_PREFIX}/include")
 set(CONF_LIBRARY_DIR "${CMAKE_INSTALL_PREFIX}/lib")
 set(CONF_LIBRARY "${CMAKE_INSTALL_PREFIX}/lib/${CMAKE_SHARED_LIBRARY_PREFIX}uvc${CMAKE_SHARED_LIBRARY_SUFFIX}")
+set(CONF_RUNTIME DESTINATION "${CMAKE_INSTALL_PREFIX}/bin")
 
 configure_file(libuvcConfig.cmake.in ${PROJECT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/libuvcConfig.cmake)
 
 configure_file(libuvcConfigVersion.cmake.in ${PROJECT_BINARY_DIR}/libuvcConfigVersion.cmake @ONLY)
 
 configure_file(libuvc.pc.in ${PROJECT_BINARY_DIR}/libuvc.pc @ONLY)
-
 install(FILES
   "${PROJECT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/libuvcConfig.cmake"
   "${PROJECT_BINARY_DIR}/libuvcConfigVersion.cmake"

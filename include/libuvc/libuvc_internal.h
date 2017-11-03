@@ -9,12 +9,13 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <pthread.h>
+//#include <pthreads/pthread.h>
+#include <pthreads/pthread.h>
 #include <signal.h>
 #ifndef WIN32
-#include <libusb-1.0/libusb.h>
+#include <libusb/libusb.h>
 #else
-#include <libusb.h>
+#include <libusb/libusb.h>
 #endif
 #include "utlist.h"
 
